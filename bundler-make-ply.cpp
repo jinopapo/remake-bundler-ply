@@ -113,6 +113,7 @@ int main(int argc,char *argv[])
   vector<point>::iterator head;
   vector<point>::iterator end;
   stack<pointvector> dfs;
+  ghiehgie
   point p,pp;
   pointvector pv;
   int count=0;
