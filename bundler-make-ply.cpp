@@ -6,6 +6,7 @@
 #include <stack>
 #include <cmath>
 #include <iterator>
+#include <queue>
 
 using namespace std;
 
@@ -44,7 +45,7 @@ struct point
 
   bool operator==(const point& right) const
   {
-    return mx == right.mx && my == right.my && mz == right.mz;
+    return (int)(mx*voxel) == (int)(right.mx*voxel) && (int)(my*voxel) == (int)(right.my*voxel) && (int)(mz*voxel) == (int)(right.mz*voxel);
   }
 
   int near(point p)
@@ -108,12 +109,9 @@ int main(int argc,char *argv[])
   ifstream iofs;
   vector<point> points;
   vector<point> opoints;
-  vector<point> ps;
-  vector<point> ops;
-  vector<point>::iterator head;
-  vector<point>::iterator end;
+  queue<point> ops1;
+  queue<point> ops2;
   stack<pointvector> dfs;
-  ghiehgie
   point p,pp;
   pointvector pv;
   int count=0;
@@ -169,8 +167,6 @@ int main(int argc,char *argv[])
     }
   }
 
-  cout << vnum << endl;
-
   for(int i=1;i<(int)points.size();i++){
     if(points[i] == points[i-1]){
       count++;
@@ -178,60 +174,17 @@ int main(int argc,char *argv[])
     else{
       if(count >= num){
         for(int j=0;j<count;j++){
-          ops.push_back(points[i-j-1]);
+          ops1.push(points[i-j-1]);
         }
       }
       count = 0;
     }
   }
 
-  //vectorからqueueに変更
-  //queueを２つ用意して交互に使う
-  //前1後ろ2右3左4上5下6
-  while(!ops.empty()){
-    pv.p = ops[0];
-    pv.v = 3;
-    dfs.push(pv);
-    head = ops.begin();
-    end = ops.begin();
-    count = 0;
-    while(!dfs.empty()){
-      pv = dfs.top();
-      dfs.pop();
-      p = pv.p;
-      pp = p;
-      while(head != ops.end()){
-        if(*end == p){
-          end++;
-        }else if(p.near(*end)  > 7){
-          if(!(pp == *end)){
-            count++;
-            pp = *end;
-            pv.p = pp;
-            pv.v = pp.near(*end);
-            dfs.push(pv);
-          }
-          end++;
-        }
-        else{
-          if(head != end){
-            copy(head,end,back_inserter(ps));
-            ops.erase(head,end);
-            head = end;
-          }
-          else{
-            head++;
-            end++;
-          }
-        }
-      }
-      if(count >= (int)(vnum * density)){
-        opoints.insert(opoints.end(),ps.begin(),ps.end());
-      }
-      else{
-        ps.clear();
-      }
-    }
+
+  while(!ops1.empty()){
+    opoints.push_back(ops1.front());
+    ops1.pop();
   }
 
   ofs << "ply" <<endl;
