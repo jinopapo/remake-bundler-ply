@@ -7,11 +7,13 @@
 #include <cmath>
 #include <iterator>
 #include <queue>
+#include <float.h>
 
 using namespace std;
 
-#define voxel 100
+#define voxel 1
 #define density 0.3
+#define densityvoxel 0.001
 
 struct point
 {
@@ -24,9 +26,9 @@ struct point
   int r;
   int g;
   int b;
-  float mx;
-  float my;
-  float mz;
+  int mx;
+  int my;
+  int mz;
 
   bool operator<(const point& right) const
   {
@@ -45,58 +47,33 @@ struct point
 
   bool operator==(const point& right) const
   {
-    return (int)(mx*voxel) == (int)(right.mx*voxel) && (int)(my*voxel) == (int)(right.my*voxel) && (int)(mz*voxel) == (int)(right.mz*voxel);
+    return mx == right.mx && my == right.my && mz == right.mz;
   }
 
   int near(point p)
   {
-    if(abs((int)(p.mx*voxel) -(int)(mx*voxel)) == 1
-    && (int)(p.my*voxel) -(int)(my*voxel) == 0
-    && (int)(p.mz*voxel) -(int)(mz*voxel) == 0){
-      if((int)(p.mx*voxel) -(int)(mx*voxel) == 1){
-        return 3;
-      }
-      else{
-        return 4;
-      }
-    }
-    else if((int)(p.mx*voxel) -(int)(mx*voxel) == 0
-    && abs((int)(p.my*voxel) -(int)(my*voxel)) == 1
-    && (int)(p.mz*voxel) -(int)(mz*voxel) == 0){
-      if((int)(p.my*voxel) -(int)(my*voxel) == 1){
-        return 5;
-      }
-      else{
-        return 6;
-      }
-    }
-    else if((int)(p.mx*voxel) -(int)(mx*voxel) == 0
-    && (int)(p.my*voxel) -(int)(my*voxel) == 0
-    && abs((int)(p.mz*voxel) -(int)(mz*voxel)) == 1){
-      if((int)(p.mz*voxel) -(int)(mz*voxel) == 1){
-        return 1;
-      }
-      else{
-        return 2;
-      }
+    if(abs(p.mx - mx) == 1 && p.my == my && p.mz == mz){
+      return p.mx - mx == 1 ? 3 : 4;
+    }else if(p.mx == mx && abs(p.my - my*voxel) == 1 && p.mz == mz){
+      return p.my - my == 1 ? 5 : 6;
+    }else if(p.mx == mx && p.my == my && abs(p.mz -mz) == 1){
+      return  (p.mz - mz) == 1 ? 1 : 2;
+    }else{
+      return 7;
     }
   }
 };
 
-struct pointvector
-{
+struct pointvector{
   point p;
   int v;
 };
 
-int label(float x)
-{
+int label(float x){
   return (int)( x < 0.0 ? x-0.5 : x+0.5 );
 }
 
-int main(int argc,char *argv[])
-{
-
+int main(int argc,char *argv[]){
   if(argc < 2 ){
     cout << "bundler-make-ply --inputFileName" << endl;
     cout << "bundler-make-ply --inputFileName --addOutPutFileName" << endl;
@@ -111,6 +88,7 @@ int main(int argc,char *argv[])
   vector<point> opoints;
   queue<point> ops1;
   queue<point> ops2;
+  queue<point> ps;
   stack<pointvector> dfs;
   point p,pp;
   pointvector pv;
@@ -136,7 +114,7 @@ int main(int argc,char *argv[])
   do{
     ifs >> s;
     if(flag){
-      num = atoi(s.c_str()) * 0.001;
+      num = atoi(s.c_str()) * densityvoxel;
       flag=false;
     }
     if(s == "vertex"){
@@ -154,9 +132,9 @@ int main(int argc,char *argv[])
     ifs >> p.r;
     ifs >> p.g;
     ifs >> p.b;
-    p.mx = label(p.x*voxel)/voxel;
-    p.my = label(p.y*voxel)/voxel;
-    p.mz = label(p.z*voxel)/voxel;
+    p.mx = label(p.x*voxel);
+    p.my = label(p.y*voxel);
+    p.mz = label(p.z*voxel);
     points.push_back(p);
   }
   sort(points.begin(),points.end());
@@ -181,10 +159,51 @@ int main(int argc,char *argv[])
     }
   }
 
-
   while(!ops1.empty()){
-    opoints.push_back(ops1.front());
-    ops1.pop();
+    pv.p = ops1.front();
+    pv.v = 3;
+    cout << ops1.size() << endl;
+    cout << ops2.size() << endl;
+    dfs.push(pv);
+    count = 0;
+    while(!dfs.empty()){
+      pv = dfs.top();
+      dfs.pop();
+      p = pv.p;
+      pp = p;
+      while(!ops1.empty()){
+        if(ops1.front() == p){
+          ps.push(ops1.front());
+        }else if(p.near(ops1.front()) < 7){
+          if(!(pp == ops1.front())){
+            count++;
+            pp = ops1.front();
+            pv.p = pp;
+            pv.v = pp.near(ops1.front());
+            dfs.push(pv);
+            cout << dfs.size() << endl;
+          }else{
+            ops2.push(ops1.front());
+          }
+        }else{
+          ops2.push(ops1.front());
+        }
+        ops1.pop();
+      }
+      cout << "voxel count : " << count << endl;
+      cout << ops2.size() << endl;
+
+      while(!ps.empty()){
+        if(count >= (int)(vnum * density)){
+          opoints.push_back(ps.front());
+        }
+        ps.pop();
+      }
+    }
+    ops1 = ops2;
+    while(!ops2.empty()){
+      ops2.pop();
+    }
   }
 
   ofs << "ply" <<endl;
