@@ -54,12 +54,84 @@ struct point
   {
     if(abs(p.mx - mx) == 1 && p.my == my && p.mz == mz){
       return p.mx - mx == 1 ? 3 : 4;
-    }else if(p.mx == mx && abs(p.my - my*voxel) == 1 && p.mz == mz){
+    }else if(p.mx == mx && abs(p.my - my) == 1 && p.mz == mz){
       return p.my - my == 1 ? 5 : 6;
-    }else if(p.mx == mx && p.my == my && abs(p.mz -mz) == 1){
+    }else if(p.mx == mx && p.my == my && abs(p.mz - mz) == 1){
       return  (p.mz - mz) == 1 ? 1 : 2;
+    }else if(abs(p.mx - mx) == 1 && abs(p.my - my) == 1 && p.mz == mz){
+      if(p.mx - mx == 1){
+        if(p.my - my == -1){
+          return 7;
+        }else{
+          return 8;
+        }
+      }else{
+        if(p.my - my == -1){
+          return 9;
+        }else{
+          return 10;
+        }
+      }
+    }else if(abs(p.mx - mx) == 1 && p.my == my && abs(p.mz - mz) == 1){
+      if(p.mx - mx == 1){
+        if(p.mz - mz == -1){
+          return 11;
+        }else{
+          return 12;
+        }
+      }else{
+        if(p.mz - mz == -1){
+          return 13;
+        }else{
+          return 14;
+        }
+      }
+    }else if(p.mx == mx && abs(p.my - my) == 1 && abs(p.mz - mz) == 1){
+      if(p.my - my == 1){
+        if(p.mz - mz == -1){
+          return 15;
+        }else{
+          return 16;
+        }
+      }else{
+        if(p.mz - mz == -1){
+          return 17;
+        }else{
+          return 18;
+        }
+      }
+    }else if(abs(p.mx - mx) == 1 && abs(p.my - my) == 1 && abs(p.mz - mz) == 1){
+      if(p.mx - mx == 1){
+        if(p.my - my == -1){
+          if(p.mz - mz == -1){
+            return 19;
+          }else{
+            return 20;
+          }
+        }else{
+          if(p.mz - mz == -1){
+            return 21;
+          }else{
+            return 22;
+          }
+        }
+      }else{
+        if(p.my - my == -1){
+          if(p.mz - mz == -1){
+            return 23;
+          }else{
+            return 24;
+          }
+        }else{
+          if(p.mz - mz == -1){
+            return 25;
+          }else{
+            return 26;
+          }
+        }
+      }
     }else{
-      return 7;
+      return 27;
     }
   }
 };
@@ -140,12 +212,6 @@ int main(int argc,char *argv[]){
   sort(points.begin(),points.end());
 
   for(int i=1;i<(int)points.size();i++){
-    if(!(points[i-1] == points[i])){
-      vnum++;
-    }
-  }
-
-  for(int i=1;i<(int)points.size();i++){
     if(points[i] == points[i-1]){
       count++;
     }
@@ -154,16 +220,17 @@ int main(int argc,char *argv[]){
         for(int j=0;j<count;j++){
           ops1.push(points[i-j-1]);
         }
+        vnum++;
       }
       count = 0;
     }
   }
 
+  cout << "voxel all:" << vnum << endl;
+
   while(!ops1.empty()){
     pv.p = ops1.front();
     pv.v = 3;
-    cout << ops1.size() << endl;
-    cout << ops2.size() << endl;
     dfs.push(pv);
     count = 0;
     while(!dfs.empty()){
@@ -174,24 +241,19 @@ int main(int argc,char *argv[]){
       while(!ops1.empty()){
         if(ops1.front() == p){
           ps.push(ops1.front());
-        }else if(p.near(ops1.front()) < 7){
+        }else if(p.near(ops1.front()) < 27){
           if(!(pp == ops1.front())){
-            count++;
             pp = ops1.front();
             pv.p = pp;
             pv.v = pp.near(ops1.front());
             dfs.push(pv);
-            cout << dfs.size() << endl;
-          }else{
-            ops2.push(ops1.front());
           }
+          ops2.push(ops1.front());
         }else{
           ops2.push(ops1.front());
         }
         ops1.pop();
       }
-      cout << "voxel count : " << count << endl;
-      cout << ops2.size() << endl;
 
       while(!ps.empty()){
         if(count >= (int)(vnum * density)){
@@ -199,11 +261,13 @@ int main(int argc,char *argv[]){
         }
         ps.pop();
       }
+      count++;
+      ops1 = ops2;
+      while(!ops2.empty()){
+        ops2.pop();
+      }
     }
-    ops1 = ops2;
-    while(!ops2.empty()){
-      ops2.pop();
-    }
+    cout << "voxel count : " << count << endl;
   }
 
   ofs << "ply" <<endl;
