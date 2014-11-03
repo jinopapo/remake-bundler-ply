@@ -254,19 +254,19 @@ int main(int argc,char *argv[]){
         }
         ops1.pop();
       }
-
-      while(!ps.empty()){
-        if(count >= (int)(vnum * density)){
-          opoints.push_back(ps.front());
-        }
-        ps.pop();
-      }
       count++;
       ops1 = ops2;
       while(!ops2.empty()){
         ops2.pop();
       }
     }
+    while(!ps.empty()){
+      if(count >= (int)(vnum * density)){
+        opoints.push_back(ps.front());
+      }
+      ps.pop();
+    }
+
     cout << "voxel count : " << count << endl;
   }
 
