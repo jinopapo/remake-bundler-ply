@@ -14,6 +14,13 @@ using namespace std;
 #define voxel 1
 #define density 0.3
 #define densityvoxel 0.001
+#define vectorave 0.7
+
+struct vec{
+  float nx;
+  float ny;
+  float nz;
+};
 
 struct point
 {
@@ -60,74 +67,34 @@ struct point
       return  (p.mz - mz) == 1 ? 1 : 2;
     }else if(abs(p.mx - mx) == 1 && abs(p.my - my) == 1 && p.mz == mz){
       if(p.mx - mx == 1){
-        if(p.my - my == -1){
-          return 7;
-        }else{
-          return 8;
-        }
+        return  (p.my - my) == -1 ? 7 : 8;
       }else{
-        if(p.my - my == -1){
-          return 9;
-        }else{
-          return 10;
-        }
+        return  (p.my - my) == -1 ? 9 : 10;
       }
     }else if(abs(p.mx - mx) == 1 && p.my == my && abs(p.mz - mz) == 1){
       if(p.mx - mx == 1){
-        if(p.mz - mz == -1){
-          return 11;
-        }else{
-          return 12;
-        }
+        return  (p.mz - mz) == -1 ? 11 : 12;
       }else{
-        if(p.mz - mz == -1){
-          return 13;
-        }else{
-          return 14;
-        }
+        return  (p.mz - mz) == -1 ? 13 : 14;
       }
     }else if(p.mx == mx && abs(p.my - my) == 1 && abs(p.mz - mz) == 1){
       if(p.my - my == 1){
-        if(p.mz - mz == -1){
-          return 15;
-        }else{
-          return 16;
-        }
-      }else{
-        if(p.mz - mz == -1){
-          return 17;
-        }else{
-          return 18;
-        }
+        return  (p.mz - mz) == -1 ? 15 : 16;
+       }else{
+        return  (p.mz - mz) == -1 ? 17 : 18;
       }
     }else if(abs(p.mx - mx) == 1 && abs(p.my - my) == 1 && abs(p.mz - mz) == 1){
       if(p.mx - mx == 1){
         if(p.my - my == -1){
-          if(p.mz - mz == -1){
-            return 19;
-          }else{
-            return 20;
-          }
+          return  (p.mz - mz) == -1 ? 19 : 20;
         }else{
-          if(p.mz - mz == -1){
-            return 21;
-          }else{
-            return 22;
-          }
+          return  (p.mz - mz) == -1 ? 21 : 22;
         }
       }else{
         if(p.my - my == -1){
-          if(p.mz - mz == -1){
-            return 23;
-          }else{
-            return 24;
-          }
+          return  (p.mz - mz) == -1 ? 23 : 24;
         }else{
-          if(p.mz - mz == -1){
-            return 25;
-          }else{
-            return 26;
-          }
+          return  (p.mz - mz) == -1 ? 25 : 26;
         }
       }
     }else{
@@ -145,6 +112,11 @@ int label(float x){
   return (int)( x < 0.0 ? x-0.5 : x+0.5 );
 }
 
+bool SimVec(point p,vec n){
+  float inn = p.nx*n.nx + p.ny*n.ny + p.nz*n.nz;
+  return inn < 0 ? false : true;
+}
+
 int main(int argc,char *argv[]){
   if(argc < 2 ){
     cout << "bundler-make-ply --inputFileName" << endl;
@@ -160,6 +132,7 @@ int main(int argc,char *argv[]){
   vector<point> opoints;
   queue<point> ops1;
   queue<point> ops2;
+  queue<point> ops3;
   queue<point> ps;
   stack<pointvector> dfs;
   point p,pp;
@@ -211,6 +184,9 @@ int main(int argc,char *argv[]){
   }
   sort(points.begin(),points.end());
 
+
+
+  //濃度で削除
   for(int i=1;i<(int)points.size();i++){
     if(points[i] == points[i-1]){
       count++;
@@ -228,6 +204,8 @@ int main(int argc,char *argv[]){
 
   cout << "voxel all:" << vnum << endl;
 
+
+  //近傍のボクセルの量で削除
   while(!ops1.empty()){
     pv.p = ops1.front();
     pv.v = 3;
@@ -260,9 +238,16 @@ int main(int argc,char *argv[]){
         ops2.pop();
       }
     }
+    int r = rand() % 256;
+    int g = rand() % 256;
+    int b = rand() % 256;
     while(!ps.empty()){
       if(count >= (int)(vnum * density)){
-        opoints.push_back(ps.front());
+        ps.front().r = r;
+        ps.front().g = g;
+        ps.front().b = b;
+        ops3.push(ps.front());
+        //opoints.push_back(ps.front());
       }
       ps.pop();
     }
@@ -270,6 +255,36 @@ int main(int argc,char *argv[]){
     cout << "voxel count : " << count << endl;
   }
 
+
+
+  //ベクトルの平均で削除
+  while(!ops3.empty()){
+    float sumnx=0;
+    float sumny=0;
+    float sumnz=0;
+    vec n;
+    p = ops3.front();
+    while(ops3.front() == p && !ops3.empty()){
+      ops1.push(ops3.front());
+      sumnx += ops3.front().nx;
+      sumny += ops3.front().ny;
+      sumnz += ops3.front().nz;
+      ops3.pop();
+    }
+    n.nx = sumnx / ops1.size();
+    n.ny = sumny / ops1.size();
+    n.nz = sumnz / ops1.size();
+    while(!ops1.empty()){
+      if(SimVec(ops1.front(),n)){
+        opoints.push_back(ops1.front());
+      }
+      ops1.pop();
+    }
+  }
+
+
+
+  //出力
   ofs << "ply" <<endl;
   ofs << "format ascii 1.0" << endl;
   ofs << "element vertex " << opoints.size() << endl;
