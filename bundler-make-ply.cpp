@@ -13,8 +13,9 @@ using namespace std;
 
 #define voxel 1
 #define density 0.3
-#define densityvoxel 0.001
-#define vectorave 0.7
+#define densityvoxel 0.002
+#define vectorave 0.4
+#define voxelnum 500
 
 struct vec{
   float nx;
@@ -33,9 +34,12 @@ struct point
   int r;
   int g;
   int b;
-  int mx;
+  float mx;
+  float my;
+  float mz;
+  /*int mx;
   int my;
-  int mz;
+  int mz;*/
 
   bool operator<(const point& right) const
   {
@@ -54,7 +58,7 @@ struct point
 
   bool operator==(const point& right) const
   {
-    return mx == right.mx && my == right.my && mz == right.mz;
+    return abs(mx - right.mx) < FLT_EPSILON && abs(my - right.my) < FLT_EPSILON && abs(mz - right.mz) < FLT_EPSILON;
   }
 
   int near(point p)
@@ -182,24 +186,43 @@ int main(int argc,char *argv[]){
     p.mz = label(p.z*voxel);
     points.push_back(p);
   }
-  sort(points.begin(),points.end());
+  //sort(points.begin(),points.end());
 
 
 
   //濃度で削除
-  for(int i=1;i<(int)points.size();i++){
-    if(points[i] == points[i-1]){
-      count++;
+  int n = voxel;
+  int vcount=0;
+  while(vcount < voxelnum){
+    vnum = 0;
+    vcount = 0;
+    count = 0;
+    for(int i=0;i<(int)ops1.size();i++){
+      ops1.pop();
     }
-    else{
-      if(count >= num){
-        for(int j=0;j<count;j++){
-          ops1.push(points[i-j-1]);
-        }
-        vnum++;
+    for(int i=0;i<(int)points.size();i++){
+      points[i].mx = label(points[i].x*n);
+      points[i].my = label(points[i].y*n);
+      points[i].mz = label(points[i].z*n);
+    }
+    sort(points.begin(),points.end());
+    for(int i=1;i<(int)points.size();i++){
+      if(points[i] == points[i-1]){
+        count++;
       }
-      count = 0;
+      else{
+        vcount++;
+        if(count >= num){
+          for(int j=0;j<count;j++){
+            ops1.push(points[i-j-1]);
+          }
+          vnum++;
+        }
+        count = 0;
+      }
     }
+    n++;
+    cout << vcount << endl;
   }
 
   cout << "voxel all:" << vnum << endl;
