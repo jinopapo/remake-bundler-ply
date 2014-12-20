@@ -13,8 +13,7 @@ using namespace std;
 
 #define voxel 1
 #define density 0.3
-#define densityvoxel 0.002
-#define vectorave 0.4
+#define densityvoxel 1/voxelnum
 #define voxelnum 500
 
 struct vec{
@@ -34,18 +33,15 @@ struct point
   int r;
   int g;
   int b;
-  float mx;
-  float my;
-  float mz;
-  /*int mx;
+  int mx;
   int my;
-  int mz;*/
+  int mz;
 
   bool operator<(const point& right) const
   {
     if(mx == right.mx){
       if(my == right.my){
-        return mz <right.mz;
+        return mz < right.mz;
       }
       else{
         return my < right.my;
@@ -58,7 +54,7 @@ struct point
 
   bool operator==(const point& right) const
   {
-    return abs(mx - right.mx) < FLT_EPSILON && abs(my - right.my) < FLT_EPSILON && abs(mz - right.mz) < FLT_EPSILON;
+    return mx == right.mx && my == right.my && mz == right.mz;
   }
 
   int near(point p)
@@ -213,8 +209,15 @@ int main(int argc,char *argv[]){
       else{
         vcount++;
         if(count >= num){
+/*          int r = rand() % 256;
+          int g = rand() % 256;
+          int b = rand() % 256;*/
           for(int j=0;j<count;j++){
+            /*points[i-j-1].r = r;
+            points[i-j-1].g = g;
+            points[i-j-1].b = b;*/
             ops1.push(points[i-j-1]);
+            //opoints.push_back(points[i-j-1]);
           }
           vnum++;
         }
@@ -222,7 +225,6 @@ int main(int argc,char *argv[]){
       }
     }
     n++;
-    cout << vcount << endl;
   }
 
   cout << "voxel all:" << vnum << endl;
@@ -269,6 +271,9 @@ int main(int argc,char *argv[]){
         ps.front().r = r;
         ps.front().g = g;
         ps.front().b = b;
+        /*ps.front().r = ps.front().mx;
+        ps.front().g = ps.front().my;
+        ps.front().b = ps.front().mz;*/
         ops3.push(ps.front());
         //opoints.push_back(ps.front());
       }
