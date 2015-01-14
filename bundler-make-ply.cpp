@@ -117,6 +117,157 @@ bool SimVec(point p,vec n){
   return inn < 0 ? false : true;
 }
 
+
+int MakeCell(queue<point> iq){
+  int vcount=0;
+  point p;
+  vcount = 0;
+  while(!iq.empty()){
+    if(!(p == iq.front())){
+      p = iq.front();
+      vcount++;
+    }
+    iq.pop();
+  }
+  return vcount;
+}
+
+//濃度で削除
+queue<point> Density(queue<point> iq,int& vnum,int num){
+  queue<point> oq;
+  queue<point> q,q1;
+  point p;
+  vnum = 0;
+  while(!oq.empty()){
+    oq.pop();
+  }
+  q = iq;
+  p = q.front();
+  q1.push(q.front());
+  q.pop();
+  while(!q.empty()){
+    if(p == q.front()){
+      q1.push(q.front());
+    }else{
+      p = q.front();
+      if((int)q1.size() >= num){
+/*          int r = rand() % 256;
+            int g = rand() % 256;
+            int b = rand() % 256;*/
+        while(!q1.empty()){
+          /*points[i-j-1].r = r;
+            points[i-j-1].g = g;
+            points[i-j-1].b = b;*/
+          oq.push(q1.front());
+          q1.pop();
+        }
+        vnum++;
+      }else{
+        while(!q1.empty()){
+          q1.pop();
+        }
+      }
+      q1.push(p);
+    }
+    q.pop();
+  }
+  cout << "voxel all:" << vnum << endl;
+  return oq;
+}
+
+
+//近傍のボクセルの量で削除
+queue<point> Consolidated(queue<point> iq,int vnum){
+  queue<point> oq;
+  queue<point> q,q1;
+  pointvector pv;
+  stack<pointvector> dfs;
+  int count = 0;
+  point p,pp;
+  while(!iq.empty()){
+    pv.p = iq.front();
+    pv.v = 3;
+    dfs.push(pv);
+    count = 0;
+    while(!dfs.empty()){
+      pv = dfs.top();
+      dfs.pop();
+      p = pv.p;
+      pp = p;
+      while(!iq.empty()){
+        if(iq.front() == p){
+          q1.push(iq.front());
+        }else if(p.near(iq.front()) < 27){
+          if(!(pp == iq.front())){
+            pp = iq.front();
+            pv.p = pp;
+            pv.v = pp.near(iq.front());
+            dfs.push(pv);
+          }
+          q.push(iq.front());
+        }else{
+          q.push(iq.front());
+        }
+        iq.pop();
+      }
+      count++;
+      iq = q;
+      while(!q.empty()){
+        q.pop();
+      }
+    }
+    /*int r = rand() % 256;
+    int g = rand() % 256;
+    int b = rand() % 256;*/
+    while(!q1.empty()){
+      if(count >= (int)(vnum * density)){
+        /*ps.front().r = r;
+        ps.front().g = g;
+        ps.front().b = b;*/
+        /*ps.front().r = ps.front().mx;
+        ps.front().g = ps.front().my;
+        ps.front().b = ps.front().mz;*/
+        oq.push(q1.front());
+      }
+      q1.pop();
+    }
+
+    cout << "voxel count : " << count << endl;
+  }
+  return oq;
+}
+
+//ベクトルの平均で削除
+queue<point> Normal(queue<point> iq){
+  queue<point> oq;
+  queue<point> q;
+  while(!iq.empty()){
+    float sumnx=0;
+    float sumny=0;
+    float sumnz=0;
+    vec n;
+    point p;
+    p = iq.front();
+    while(iq.front() == p && !iq.empty()){
+      q.push(iq.front());
+      sumnx += iq.front().nx;
+      sumny += iq.front().ny;
+      sumnz += iq.front().nz;
+      iq.pop();
+    }
+    n.nx = sumnx / q.size();
+    n.ny = sumny / q.size();
+    n.nz = sumnz / q.size();
+    while(!q.empty()){
+      if(SimVec(q.front(),n)){
+        oq.push(q.front());
+      }
+      q.pop();
+    }
+  }
+  return oq;
+}
+
 int main(int argc,char *argv[]){
   if(argc < 2 ){
     cout << "bundler-make-ply --inputFileName" << endl;
@@ -129,18 +280,17 @@ int main(int argc,char *argv[]){
   ofstream ofs;
   ifstream iofs;
   vector<point> points;
-  vector<point> opoints;
+  queue<point> opoints;
   queue<point> ops1;
   queue<point> ops2;
   queue<point> ops3;
   queue<point> ps;
-  stack<pointvector> dfs;
-  point p,pp;
-  pointvector pv;
-  int count=0;
+  point p;
   int num;
   bool flag = false;
   int vnum = 1;
+  int vcount=0;
+  int n = voxel;
 
   ifs.open(argv[1],ios::in);
   if(!ifs.is_open()){
@@ -159,7 +309,7 @@ int main(int argc,char *argv[]){
   do{
     ifs >> s;
     if(flag){
-      num = atoi(s.c_str()) * densityvoxel;
+      num = atoi(s.c_str());
       flag=false;
     }
     if(s == "vertex"){
@@ -182,135 +332,33 @@ int main(int argc,char *argv[]){
     p.mz = label(p.z*voxel);
     points.push_back(p);
   }
-  //sort(points.begin(),points.end());
 
-
-
-  //濃度で削除
-  int n = voxel;
-  int vcount=0;
   while(vcount < voxelnum){
-    vnum = 0;
-    vcount = 0;
-    count = 0;
-    for(int i=0;i<(int)ops1.size();i++){
-      ops1.pop();
-    }
+    queue<point> ops;
     for(int i=0;i<(int)points.size();i++){
       points[i].mx = label(points[i].x*n);
       points[i].my = label(points[i].y*n);
       points[i].mz = label(points[i].z*n);
     }
+
     sort(points.begin(),points.end());
-    for(int i=1;i<(int)points.size();i++){
-      if(points[i] == points[i-1]){
-        count++;
-      }
-      else{
-        vcount++;
-        if(count >= num){
-/*          int r = rand() % 256;
-          int g = rand() % 256;
-          int b = rand() % 256;*/
-          for(int j=0;j<count;j++){
-            /*points[i-j-1].r = r;
-            points[i-j-1].g = g;
-            points[i-j-1].b = b;*/
-            ops1.push(points[i-j-1]);
-            //opoints.push_back(points[i-j-1]);
-          }
-          vnum++;
-        }
-        count = 0;
-      }
+
+    for(auto i:points){
+      ops.push(i);
     }
+    vcount = MakeCell(ops);
     n++;
+    ops1 = ops;
   }
 
-  cout << "voxel all:" << vnum << endl;
+  num /= vcount;
+  ops1 = Density(ops1,vnum,num);
 
+  ops2 = Normal(ops1);
 
-  //近傍のボクセルの量で削除
-  while(!ops1.empty()){
-    pv.p = ops1.front();
-    pv.v = 3;
-    dfs.push(pv);
-    count = 0;
-    while(!dfs.empty()){
-      pv = dfs.top();
-      dfs.pop();
-      p = pv.p;
-      pp = p;
-      while(!ops1.empty()){
-        if(ops1.front() == p){
-          ps.push(ops1.front());
-        }else if(p.near(ops1.front()) < 27){
-          if(!(pp == ops1.front())){
-            pp = ops1.front();
-            pv.p = pp;
-            pv.v = pp.near(ops1.front());
-            dfs.push(pv);
-          }
-          ops2.push(ops1.front());
-        }else{
-          ops2.push(ops1.front());
-        }
-        ops1.pop();
-      }
-      count++;
-      ops1 = ops2;
-      while(!ops2.empty()){
-        ops2.pop();
-      }
-    }
-    int r = rand() % 256;
-    int g = rand() % 256;
-    int b = rand() % 256;
-    while(!ps.empty()){
-      if(count >= (int)(vnum * density)){
-        ps.front().r = r;
-        ps.front().g = g;
-        ps.front().b = b;
-        /*ps.front().r = ps.front().mx;
-        ps.front().g = ps.front().my;
-        ps.front().b = ps.front().mz;*/
-        ops3.push(ps.front());
-        //opoints.push_back(ps.front());
-      }
-      ps.pop();
-    }
+  ops2 = Density(ops2,vnum,num);
 
-    cout << "voxel count : " << count << endl;
-  }
-
-
-
-  //ベクトルの平均で削除
-  while(!ops3.empty()){
-    float sumnx=0;
-    float sumny=0;
-    float sumnz=0;
-    vec n;
-    p = ops3.front();
-    while(ops3.front() == p && !ops3.empty()){
-      ops1.push(ops3.front());
-      sumnx += ops3.front().nx;
-      sumny += ops3.front().ny;
-      sumnz += ops3.front().nz;
-      ops3.pop();
-    }
-    n.nx = sumnx / ops1.size();
-    n.ny = sumny / ops1.size();
-    n.nz = sumnz / ops1.size();
-    while(!ops1.empty()){
-      if(SimVec(ops1.front(),n)){
-        opoints.push_back(ops1.front());
-      }
-      ops1.pop();
-    }
-  }
-
-
+  opoints = Consolidated(ops2,vnum);
 
   //出力
   ofs << "ply" <<endl;
@@ -327,16 +375,17 @@ int main(int argc,char *argv[]){
   ofs << "property uchar diffuse_blue" << endl;
   ofs << "end_header" << endl;
 
-  for(int i=0;i<(int)opoints.size();i++){
-    ofs << opoints[i].x << " ";
-    ofs << opoints[i].y << " ";
-    ofs << opoints[i].z << " ";
-    ofs << opoints[i].nx << " ";
-    ofs << opoints[i].ny << " ";
-    ofs << opoints[i].nz << " ";
-    ofs << opoints[i].r << " ";
-    ofs << opoints[i].g << " ";
-    ofs << opoints[i].b << endl;
+  while(!opoints.empty()){
+    ofs << opoints.front().x << " ";
+    ofs << opoints.front().y << " ";
+    ofs << opoints.front().z << " ";
+    ofs << opoints.front().nx << " ";
+    ofs << opoints.front().ny << " ";
+    ofs << opoints.front().nz << " ";
+    ofs << opoints.front().r << " ";
+    ofs << opoints.front().g << " ";
+    ofs << opoints.front().b << endl;
+    opoints.pop();
   }
 
   return 0;
