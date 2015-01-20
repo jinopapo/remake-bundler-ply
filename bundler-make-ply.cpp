@@ -8,13 +8,14 @@
 #include <iterator>
 #include <queue>
 #include <float.h>
+#include <set>
 
 using namespace std;
 
 #define voxel 1
-#define density 0.3
+#define density 0.5
 #define densityvoxel 1/voxelnum
-#define voxelnum 500
+#define voxelnum 2000
 
 struct vec{
   float nx;
@@ -49,6 +50,21 @@ struct point
     }
     else{
       return mx < right.mx;
+    }
+  }
+
+  bool operator>(const point& right) const
+  {
+    if(mx == right.mx){
+      if(my == right.my){
+        return mz > right.mz;
+      }
+      else{
+        return my > right.my;
+      }
+    }
+    else{
+      return mx > right.mx;
     }
   }
 
@@ -107,6 +123,7 @@ struct pointvector{
   point p;
   int v;
 };
+
 
 int label(float x){
   return (int)( x < 0.0 ? x-0.5 : x+0.5 );
@@ -180,6 +197,7 @@ queue<point> Density(queue<point> iq,int& vnum,int num){
 queue<point> Consolidated(queue<point> iq,int vnum){
   queue<point> oq;
   queue<point> q,q1;
+  set<point> map;
   pointvector pv;
   stack<pointvector> dfs;
   int count = 0;
@@ -187,7 +205,9 @@ queue<point> Consolidated(queue<point> iq,int vnum){
   while(!iq.empty()){
     pv.p = iq.front();
     pv.v = 3;
-    dfs.push(pv);
+    if(map.insert(pv.p).second){
+      dfs.push(pv);
+    }
     count = 0;
     while(!dfs.empty()){
       pv = dfs.top();
@@ -202,7 +222,9 @@ queue<point> Consolidated(queue<point> iq,int vnum){
             pp = iq.front();
             pv.p = pp;
             pv.v = pp.near(iq.front());
-            dfs.push(pv);
+            if(map.insert(pv.p).second){
+              dfs.push(pv);
+            }
           }
           q.push(iq.front());
         }else{
